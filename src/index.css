@@ -9,16 +9,16 @@
 body {
   background-color: #050205;
   color: #ffffff;
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+  /* Reduced grid opacity and made it fixed to prevent flicker during transitions */
   background-image: 
-    linear-gradient(to right, rgba(255, 0, 170, 0.03) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(255, 0, 170, 0.03) 1px, transparent 1px);
+    linear-gradient(to right, rgba(255, 0, 170, 0.01) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 0, 170, 0.01) 1px, transparent 1px);
   background-size: 30px 30px;
   background-position: center center;
-  min-height: 100vh;
-  margin: 0;
-  display: flex;
-  justify-content: center;
-  align-items: center;
+  background-attachment: fixed;
 }
 
 .neon-text {
@@ -26,15 +26,30 @@ body {
     0 0 5px #fff,
     0 0 10px #fff,
     0 0 20px #ff00aa,
-    0 0 40px #ff00aa,
-    0 0 80px #ff00aa;
+    0 0 40px #ff00aa;
 }
 
 .neon-box {
-  box-shadow: 0 0 40px rgba(255, 0, 170, 0.15);
+  box-shadow: 0 0 40px rgba(255, 0, 170, 0.1);
+  backdrop-filter: blur(10px);
 }
 
 .input-glow:focus {
   outline: none;
-  box-shadow: 0 0 15px rgba(170, 0, 255, 0.3);
+  box-shadow: 0 0 15px rgba(170, 0, 255, 0.2);
+}
+
+/* Custom scrollbar for terminal feel */
+::-webkit-scrollbar {
+  width: 4px;
+}
+::-webkit-scrollbar-track {
+  background: #050205;
+}
+::-webkit-scrollbar-thumb {
+  background: #ff00aa33;
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #ff00aa66;
 }
