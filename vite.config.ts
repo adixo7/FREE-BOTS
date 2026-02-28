@@ -19,7 +19,12 @@ export default defineConfig(({mode}) => {
       host: '0.0.0.0',
       port: 5000,
       allowedHosts: true,
-      hmr: process.env.DISABLE_HMR !== 'true',
+      hmr: {
+        clientPort: 443,
+      },
+      watch: {
+        ignored: ['**/.local/**'],
+      },
     },
   };
 });
