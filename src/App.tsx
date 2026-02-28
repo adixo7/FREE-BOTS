@@ -5,10 +5,14 @@ import { motion, AnimatePresence } from 'framer-motion';
 export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [logs, setLogs] = useState<string[]>([]);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [botCount, setBotCount] = useState('4');
+  const [guildId, setGuildId] = useState('');
+  const [region, setRegion] = useState('');
 
   const handleLogin = () => {
     if (username === 'ADIXO' && password === 'PRIMEADIXO7') {
@@ -21,6 +25,43 @@ export default function App() {
     } else {
       setError('INVALID CREDENTIALS');
     }
+  };
+
+  const handleLaunch = () => {
+    if (!guildId || !region) return;
+    
+    setIsProcessing(true);
+    setLogs([]);
+    
+    const possibleLogs = [
+      'AUTHENTICATING TERMINAL...',
+      'ESTABLISHING SECURE CONNECTION...',
+      `TARGET ACQUIRED: GUILD [${guildId}]`,
+      `REGION DETECTED: ${region.toUpperCase()}`,
+      'BYPASSING MAINFRAME ENCRYPTION...',
+      'INJECTING ZEXISTEY_V3.BOT SCRIPTS...',
+      'SYNCING WITH SERVER PACKETS...',
+      'INITIALIZING BOT PROTOCOLS...',
+      'BYPASSING FIREWALL...',
+      'CONNECTING TO ADB SERVER...',
+      'SENDING BOT REQUESTS...',
+      'VALIDATING HANDSHAKE...',
+      'ENCRYPTING DATA TUNNEL...',
+      'AUTHORIZING ACCESS...',
+    ];
+
+    let currentLogIndex = 0;
+    const interval = setInterval(() => {
+      if (currentLogIndex < possibleLogs.length) {
+        setLogs(prev => [...prev, `> ${possibleLogs[currentLogIndex]}`]);
+        currentLogIndex++;
+      }
+    }, 600);
+
+    setTimeout(() => {
+      clearInterval(interval);
+      setLogs(prev => [...prev, `> ${botCount} BOTS SUCCESSFULLY ADDED.`]);
+    }, 10000);
   };
 
   return (
@@ -86,6 +127,55 @@ export default function App() {
               </button>
             </div>
           </motion.div>
+        ) : isProcessing ? (
+          <motion.div
+            key="terminal"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="w-full max-w-[450px] p-6 rounded-lg bg-[#050205] border border-[#00ff41]/30 shadow-[0_0_20px_rgba(0,255,65,0.1)] flex flex-col relative z-10 mx-4 min-h-[400px]"
+          >
+            <div className="flex items-center gap-2 mb-4 border-b border-[#00ff41]/20 pb-2">
+              <div className="w-3 h-3 rounded-full bg-[#ff5f56]" />
+              <div className="w-3 h-3 rounded-full bg-[#ffbd2e]" />
+              <div className="w-3 h-3 rounded-full bg-[#27c93f]" />
+              <span className="ml-2 text-[#00ff41] font-mono text-[10px] opacity-70">terminal.sh — 80x24</span>
+            </div>
+            
+            <div className="font-mono text-[11px] space-y-1.5 overflow-y-auto max-h-[350px] scrollbar-hide">
+              <div className="text-[#00ff41] mb-2">$ ./initialize_guild_bot.sh --target={guildId} --count={botCount}</div>
+              {logs.map((log, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, x: -5 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  className={`${log.includes('SUCCESSFULLY') ? 'text-[#00ff41] font-bold mt-4' : 'text-[#00ff41]/90'}`}
+                >
+                  {log}
+                </motion.div>
+              ))}
+              {logs.length < 15 && (
+                <div className="flex items-center gap-1 text-[#00ff41]">
+                  <span>_</span>
+                  <motion.div
+                    animate={{ opacity: [0, 1, 0] }}
+                    transition={{ repeat: Infinity, duration: 0.8 }}
+                    className="w-2 h-4 bg-[#00ff41]"
+                  />
+                </div>
+              )}
+            </div>
+            
+            {logs.some(log => log.includes('SUCCESSFULLY')) && (
+              <motion.button
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                onClick={() => setIsProcessing(false)}
+                className="mt-auto pt-6 text-[#00ff41] hover:text-white text-[10px] font-mono uppercase tracking-widest transition-colors cursor-pointer text-center"
+              >
+                [ RETURN TO DASHBOARD ]
+              </motion.button>
+            )}
+          </motion.div>
         ) : (
           <motion.div
             key="dashboard"
@@ -125,12 +215,15 @@ export default function App() {
               <input 
                 type="text" 
                 placeholder="ENTER GUILD ID" 
+                value={guildId}
+                onChange={(e) => setGuildId(e.target.value)}
                 className="w-full bg-black border border-[#7000ff] rounded p-2.5 text-gray-300 font-mono text-xs focus:border-[#aa00ff] input-glow transition-all placeholder-gray-600"
               />
 
               <div className="relative">
                 <select 
-                  defaultValue=""
+                  value={region}
+                  onChange={(e) => setRegion(e.target.value)}
                   className="w-full bg-black border border-[#7000ff] rounded p-2.5 text-[#00e5ff] font-mono text-xs appearance-none focus:border-[#aa00ff] input-glow transition-all cursor-pointer"
                 >
                   <option value="" disabled hidden>SELECT SERVER</option>
@@ -162,12 +255,13 @@ export default function App() {
             </div>
 
             {/* Action Buttons */}
-            <div className="w-full space-y-3">
-              <button className="w-full bg-[#2a0815] hover:bg-[#3a0b1d] border border-[#ff0055]/70 rounded py-2.5 text-white font-black tracking-widest uppercase transition-all hover:border-[#ff0055] hover:shadow-[0_0_15px_rgba(255,0,85,0.3)] text-xs cursor-pointer">
+            <div className="w-full">
+              <button 
+                onClick={handleLaunch}
+                disabled={!guildId || !region}
+                className={`w-full bg-[#2a0815] hover:bg-[#3a0b1d] border border-[#ff0055]/70 rounded py-2.5 text-white font-black tracking-widest uppercase transition-all hover:border-[#ff0055] hover:shadow-[0_0_15px_rgba(255,0,85,0.3)] text-xs cursor-pointer ${(!guildId || !region) ? 'opacity-50 cursor-not-allowed' : ''}`}
+              >
                 LAUNCH BOTS
-              </button>
-              <button className="w-full bg-[#15082a] hover:bg-[#1d0b3a] border border-[#7000ff]/70 rounded py-2.5 text-white font-black tracking-widest uppercase transition-all hover:border-[#aa00ff] hover:shadow-[0_0_15px_rgba(170,0,255,0.3)] text-xs cursor-pointer">
-                FREE GLORY TASKS
               </button>
             </div>
           </motion.div>
