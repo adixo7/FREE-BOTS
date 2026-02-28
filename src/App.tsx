@@ -1,11 +1,12 @@
-import React, { useState, useEffect } from 'react';
-import { ChevronDown, Loader2 } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { ChevronDown, Loader2, ArrowLeft, Trophy, Youtube, Gamepad2, Timer, Users, Target } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
   const [logs, setLogs] = useState<string[]>([]);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -13,6 +14,59 @@ export default function App() {
   const [botCount, setBotCount] = useState('4');
   const [guildId, setGuildId] = useState('');
   const [region, setRegion] = useState('');
+  const [launchError, setLaunchError] = useState('');
+  
+  // Stats for the final page
+  const [matches, setMatches] = useState(1);
+  const [glory, setGlory] = useState(0);
+  const [startTime, setStartTime] = useState<number | null>(null);
+
+  const terminalEndRef = useRef<HTMLDivElement>(null);
+
+  const scrollToBottom = () => {
+    terminalEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [logs]);
+
+  // Logic for increasing matches every 2 minutes
+  useEffect(() => {
+    if (isSuccess) {
+      const matchInterval = setInterval(() => {
+        setMatches(prev => prev + 1);
+      }, 120000); // 2 minutes
+      return () => clearInterval(matchInterval);
+    }
+  }, [isSuccess]);
+
+  // Logic for increasing glory
+  useEffect(() => {
+    if (isSuccess && startTime) {
+      const now = Date.now();
+      const diffMinutes = (now - startTime) / 60000;
+      
+      if (diffMinutes >= 2.4) {
+        if (glory === 0) setGlory(300);
+        
+        const gloryInterval = setInterval(() => {
+          setGlory(prev => {
+            const next = prev + Math.floor(Math.random() * (530 - 300 + 1)) + 300;
+            return next;
+          });
+        }, 40000); // 40 seconds
+        return () => clearInterval(gloryInterval);
+      } else {
+        // Check again in a bit if we haven't reached 2.4 mins
+        const checkTimeout = setTimeout(() => {
+          // Trigger a re-render to re-check the condition
+          setStartTime(prev => prev);
+        }, 10000);
+        return () => clearTimeout(checkTimeout);
+      }
+    }
+  }, [isSuccess, startTime, glory]);
 
   const handleLogin = () => {
     if (username === 'ADIXO' && password === 'PRIMEADIXO7') {
@@ -29,9 +83,23 @@ export default function App() {
 
   const handleLaunch = () => {
     if (!guildId || !region) return;
+
+    // Check last launch for this guild
+    const lastLaunch = localStorage.getItem(`last_launch_${guildId}`);
+    if (lastLaunch) {
+      const lastTime = parseInt(lastLaunch);
+      const diff = Date.now() - lastTime;
+      if (diff < 1800000) { // 30 minutes in ms
+        const remainingMins = Math.ceil((1800000 - diff) / 60000);
+        setLaunchError(`COOLDOWN ACTIVE: PLEASE WAIT ${remainingMins} MINUTES FOR THIS GUILD.`);
+        setTimeout(() => setLaunchError(''), 5000);
+        return;
+      }
+    }
     
     setIsProcessing(true);
     setLogs([]);
+    setLaunchError('');
     
     const possibleLogs = [
       'AUTHENTICATING TERMINAL...',
@@ -61,11 +129,18 @@ export default function App() {
     setTimeout(() => {
       clearInterval(interval);
       setLogs(prev => [...prev, `> ${botCount} BOTS SUCCESSFULLY ADDED.`]);
+      localStorage.setItem(`last_launch_${guildId}`, Date.now().toString());
+      
+      setTimeout(() => {
+        setIsProcessing(false);
+        setIsSuccess(true);
+        setStartTime(Date.now());
+      }, 1500);
     }, 10000);
   };
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-[#050205] overflow-hidden">
+    <div className="min-h-screen w-full flex items-center justify-center bg-[#050205] overflow-hidden p-4">
       <AnimatePresence mode="wait">
         {isLoading ? (
           <motion.div
@@ -86,7 +161,7 @@ export default function App() {
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 1.05 }}
-            className="w-full max-w-[420px] p-8 rounded-xl bg-[#0a050a] border border-[#ff00aa]/30 neon-box flex flex-col items-center relative z-10 mx-4"
+            className="w-full max-w-[420px] p-8 rounded-xl bg-[#0a050a] border border-[#ff00aa]/30 neon-box flex flex-col items-center relative z-10"
           >
             {/* Header */}
             <div className="text-center mb-10 mt-2">
@@ -105,16 +180,16 @@ export default function App() {
                 placeholder="USERNAME" 
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                className="w-full bg-black border border-[#7000ff] rounded p-3.5 text-gray-300 font-mono text-xs focus:border-[#aa00ff] input-glow transition-all placeholder-gray-600"
+                className="w-full bg-black border border-[#7000ff] rounded p-3.5 text-gray-300 font-mono text-xs focus:border-[#aa00ff] transition-all placeholder-gray-600 outline-none"
               />
               <input 
                 type="password" 
                 placeholder="PASSWORD" 
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full bg-black border border-[#7000ff] rounded p-3.5 text-gray-300 font-mono text-xs focus:border-[#aa00ff] input-glow transition-all placeholder-gray-600"
+                className="w-full bg-black border border-[#7000ff] rounded p-3.5 text-gray-300 font-mono text-xs focus:border-[#aa00ff] transition-all placeholder-gray-600 outline-none"
               />
-              {error && <div className="text-[#ff0055] font-mono text-[10px] text-center">{error}</div>}
+              {error && <div className="text-[#ff0055] font-mono text-[10px] text-center uppercase tracking-tighter">{error}</div>}
             </div>
 
             {/* Action Button */}
@@ -132,16 +207,24 @@ export default function App() {
             key="terminal"
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="w-full max-w-[450px] p-6 rounded-lg bg-[#050205] border border-[#00ff41]/30 shadow-[0_0_20px_rgba(0,255,65,0.1)] flex flex-col relative z-10 mx-4 min-h-[400px]"
+            className="w-full max-w-[450px] p-6 rounded-lg bg-[#050205] border border-[#00ff41]/30 shadow-[0_0_20px_rgba(0,255,65,0.1)] flex flex-col relative z-10 min-h-[400px]"
           >
-            <div className="flex items-center gap-2 mb-4 border-b border-[#00ff41]/20 pb-2">
-              <div className="w-3 h-3 rounded-full bg-[#ff5f56]" />
-              <div className="w-3 h-3 rounded-full bg-[#ffbd2e]" />
-              <div className="w-3 h-3 rounded-full bg-[#27c93f]" />
-              <span className="ml-2 text-[#00ff41] font-mono text-[10px] opacity-70">terminal.sh — 80x24</span>
+            <div className="flex items-center justify-between mb-4 border-b border-[#00ff41]/20 pb-2">
+              <div className="flex items-center gap-2">
+                <button 
+                  onClick={() => setIsProcessing(false)}
+                  className="p-1 hover:bg-[#00ff41]/10 rounded transition-colors text-[#00ff41]"
+                >
+                  <ArrowLeft size={16} />
+                </button>
+                <div className="w-3 h-3 rounded-full bg-[#ff5f56]" />
+                <div className="w-3 h-3 rounded-full bg-[#ffbd2e]" />
+                <div className="w-3 h-3 rounded-full bg-[#27c93f]" />
+              </div>
+              <span className="text-[#00ff41] font-mono text-[10px] opacity-70">terminal.sh — 80x24</span>
             </div>
             
-            <div className="font-mono text-[11px] space-y-1.5 overflow-y-auto max-h-[350px] scrollbar-hide">
+            <div className="font-mono text-[11px] space-y-1.5 overflow-y-auto max-h-[350px] scrollbar-hide flex-grow">
               <div className="text-[#00ff41] mb-2">$ ./initialize_guild_bot.sh --target={guildId} --count={botCount}</div>
               {logs.map((log, i) => (
                 <motion.div
@@ -163,25 +246,103 @@ export default function App() {
                   />
                 </div>
               )}
+              <div ref={terminalEndRef} />
             </div>
-            
-            {logs.some(log => log.includes('SUCCESSFULLY')) && (
-              <motion.button
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                onClick={() => setIsProcessing(false)}
-                className="mt-auto pt-6 text-[#00ff41] hover:text-white text-[10px] font-mono uppercase tracking-widest transition-colors cursor-pointer text-center"
+          </motion.div>
+        ) : isSuccess ? (
+          <motion.div
+            key="success"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="w-full max-w-[450px] p-6 rounded-xl bg-[#0a050a] border border-[#00ffcc]/30 neon-box flex flex-col items-center relative z-10"
+          >
+            <Trophy className="text-[#00ffcc] w-16 h-16 mb-4 animate-bounce" />
+            <h2 className="text-2xl font-black text-white tracking-wider mb-2 text-center neon-text">
+              CONGRATULATIONS!
+            </h2>
+            <p className="text-[#00e5ff] text-xs font-mono text-center mb-6">
+              {botCount} BOTS HAVE BEEN SUCCESSFULLY ADDED TO YOUR GUILD.
+            </p>
+
+            <div className="w-full bg-[#050205] border border-[#00e5ff]/20 rounded-lg p-4 mb-8 flex flex-col items-center gap-3">
+              <p className="text-white text-[10px] font-bold tracking-widest uppercase">Support the Creator</p>
+              <a 
+                href="https://www.youtube.com/@adixo_ff" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 bg-[#ff0000] hover:bg-[#cc0000] text-white px-4 py-2 rounded font-black text-xs transition-all shadow-lg"
               >
-                [ RETURN TO DASHBOARD ]
-              </motion.button>
-            )}
+                <Youtube size={16} />
+                SUBSCRIBE TO ADIXO TV
+              </a>
+            </div>
+
+            {/* Match Progress Box */}
+            <div className="w-full grid grid-cols-2 gap-4">
+              <div className="bg-[#050205] border border-[#ffbd2e]/30 rounded p-3 relative overflow-hidden">
+                <div className="absolute top-0 left-0 w-full h-[2px] bg-[#ffbd2e]/50" />
+                <h3 className="text-[#ffbd2e] text-[9px] font-black tracking-widest mb-3 uppercase flex items-center gap-1">
+                  <Gamepad2 size={10} /> ACTIVE MATCH
+                </h3>
+                <div className="space-y-2 font-mono text-[10px]">
+                  <div className="flex justify-between">
+                    <span className="text-white">MATCH:</span>
+                    <span className="text-[#ffbd2e]">#{matches}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-white">MODE:</span>
+                    <span className="text-[#ffbd2e]">BR</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-white">PLAYERS:</span>
+                    <span className="text-[#ffbd2e]">4/4</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-white">REMAINING:</span>
+                    <span className="text-[#ffbd2e]">4270s</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-[#050205] border border-[#00e5ff]/30 rounded p-3 relative overflow-hidden">
+                <div className="absolute top-0 left-0 w-full h-[2px] bg-[#00e5ff]/50" />
+                <h3 className="text-[#00e5ff] text-[9px] font-black tracking-widest mb-3 uppercase flex items-center gap-1">
+                   ENGINE STATUS
+                </h3>
+                <div className="space-y-2 font-mono text-[10px]">
+                  <div className="flex justify-between">
+                    <span className="text-white">RUNNING:</span>
+                    <span className="text-[#00e5ff]">{matches}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-white">TOTAL:</span>
+                    <span className="text-[#00e5ff]">{matches}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-white">GLORY:</span>
+                    <span className="text-[#00e5ff]">{glory}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <button 
+              onClick={() => {
+                setIsSuccess(false);
+                setGuildId('');
+                setRegion('');
+              }}
+              className="mt-8 text-white/40 hover:text-white text-[9px] font-mono uppercase tracking-widest transition-colors"
+            >
+              [ BACK TO HOME ]
+            </button>
           </motion.div>
         ) : (
           <motion.div
             key="dashboard"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="w-full max-w-[380px] p-6 rounded-xl bg-[#0a050a] border border-[#ff00aa]/30 neon-box flex flex-col items-center relative z-10 mx-4"
+            className="w-full max-w-[380px] p-6 rounded-xl bg-[#0a050a] border border-[#ff00aa]/30 neon-box flex flex-col items-center relative z-10"
           >
             {/* Header */}
             <div className="text-center mb-6 mt-1">
@@ -216,15 +377,18 @@ export default function App() {
                 type="text" 
                 placeholder="ENTER GUILD ID" 
                 value={guildId}
-                onChange={(e) => setGuildId(e.target.value)}
-                className="w-full bg-black border border-[#7000ff] rounded p-2.5 text-gray-300 font-mono text-xs focus:border-[#aa00ff] input-glow transition-all placeholder-gray-600"
+                onChange={(e) => {
+                  setGuildId(e.target.value);
+                  setLaunchError('');
+                }}
+                className="w-full bg-black border border-[#7000ff] rounded p-2.5 text-gray-300 font-mono text-xs focus:border-[#aa00ff] transition-all placeholder-gray-600 outline-none"
               />
 
               <div className="relative">
                 <select 
                   value={region}
                   onChange={(e) => setRegion(e.target.value)}
-                  className="w-full bg-black border border-[#7000ff] rounded p-2.5 text-[#00e5ff] font-mono text-xs appearance-none focus:border-[#aa00ff] input-glow transition-all cursor-pointer"
+                  className="w-full bg-black border border-[#7000ff] rounded p-2.5 text-[#00e5ff] font-mono text-xs appearance-none focus:border-[#aa00ff] transition-all cursor-pointer outline-none"
                 >
                   <option value="" disabled hidden>SELECT SERVER</option>
                   <option value="bangladesh">BANGLADESH</option>
@@ -241,7 +405,7 @@ export default function App() {
                 <select 
                   value={botCount}
                   onChange={(e) => setBotCount(e.target.value)}
-                  className="w-full bg-black border border-[#7000ff] rounded p-2.5 text-[#00e5ff] font-mono text-xs appearance-none focus:border-[#aa00ff] input-glow transition-all cursor-pointer"
+                  className="w-full bg-black border border-[#7000ff] rounded p-2.5 text-[#00e5ff] font-mono text-xs appearance-none focus:border-[#aa00ff] transition-all cursor-pointer outline-none"
                 >
                   <option value="" disabled hidden>SELECT BOT AMOUNT</option>
                   <option value="4">4 BOTS</option>
@@ -252,6 +416,16 @@ export default function App() {
                   <ChevronDown size={14} />
                 </div>
               </div>
+              
+              {launchError && (
+                <motion.div 
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  className="bg-[#ff0055]/10 border border-[#ff0055]/30 rounded p-2 text-[#ff0055] text-[9px] font-mono text-center uppercase"
+                >
+                  {launchError}
+                </motion.div>
+              )}
             </div>
 
             {/* Action Buttons */}
