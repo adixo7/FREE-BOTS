@@ -15,6 +15,7 @@ export default function App() {
   const [guildId, setGuildId] = useState('');
   const [region, setRegion] = useState('');
   const [launchError, setLaunchError] = useState('');
+  const [timer, setTimer] = useState(4270);
   
   // Stats for the final page
   const [matches, setMatches] = useState(1);
@@ -31,6 +32,16 @@ export default function App() {
     scrollToBottom();
   }, [logs]);
 
+  // Timer logic
+  useEffect(() => {
+    if (isSuccess && timer > 0) {
+      const timerInterval = setInterval(() => {
+        setTimer(prev => prev - 1);
+      }, 1000);
+      return () => clearInterval(timerInterval);
+    }
+  }, [isSuccess, timer]);
+
   // Logic for increasing matches every 2 minutes
   useEffect(() => {
     if (isSuccess) {
@@ -44,29 +55,38 @@ export default function App() {
   // Logic for increasing glory
   useEffect(() => {
     if (isSuccess && startTime) {
-      const now = Date.now();
-      const diffMinutes = (now - startTime) / 60000;
-      
-      if (diffMinutes >= 2.4) {
-        if (glory === 0) setGlory(300);
+      const checkInterval = setInterval(() => {
+        const now = Date.now();
+        const diffMinutes = (now - startTime) / 60000;
         
-        const gloryInterval = setInterval(() => {
-          setGlory(prev => {
-            const next = prev + Math.floor(Math.random() * (530 - 300 + 1)) + 300;
-            return next;
-          });
-        }, 40000); // 40 seconds
-        return () => clearInterval(gloryInterval);
-      } else {
-        // Check again in a bit if we haven't reached 2.4 mins
-        const checkTimeout = setTimeout(() => {
-          // Trigger a re-render to re-check the condition
-          setStartTime(prev => prev);
-        }, 10000);
-        return () => clearTimeout(checkTimeout);
-      }
+        if (diffMinutes >= 5) {
+          if (glory === 0) {
+            setGlory(Math.floor(Math.random() * (630 - 340 + 1)) + 340);
+          } else {
+            // After initial glory, add more every 40s to 60s
+            // We use a separate state or logic to handle the random interval
+          }
+        }
+      }, 1000);
+      return () => clearInterval(checkInterval);
     }
   }, [isSuccess, startTime, glory]);
+
+  // Glory increment logic after initial 5 mins
+  useEffect(() => {
+    if (isSuccess && glory > 0) {
+      const scheduleNext = () => {
+        const randomTime = Math.floor(Math.random() * (60000 - 40000 + 1)) + 40000;
+        return setTimeout(() => {
+          setGlory(prev => prev + Math.floor(Math.random() * (600 - 200 + 1)) + 200);
+          timeoutId = scheduleNext();
+        }, randomTime);
+      };
+      
+      let timeoutId = scheduleNext();
+      return () => clearTimeout(timeoutId);
+    }
+  }, [isSuccess, glory > 0]);
 
   const handleLogin = () => {
     if (username === 'ADIXO' && password === 'PRIMEADIXO7') {
@@ -82,7 +102,13 @@ export default function App() {
   };
 
   const handleLaunch = () => {
-    if (!guildId || !region) return;
+    if (!/^\d+$/.test(guildId)) {
+      setLaunchError('INVALID GUILD ID');
+      setTimeout(() => setLaunchError(''), 3000);
+      return;
+    }
+    if (guildId.length !== 10) return;
+    if (!region) return;
 
     // Check last launch for this guild
     const lastLaunch = localStorage.getItem(`last_launch_${guildId}`);
@@ -299,7 +325,7 @@ export default function App() {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-white">REMAINING:</span>
-                    <span className="text-[#ffbd2e]">4270s</span>
+                    <span className="text-[#ffbd2e]">{timer}s</span>
                   </div>
                 </div>
               </div>
@@ -331,6 +357,9 @@ export default function App() {
                 setIsSuccess(false);
                 setGuildId('');
                 setRegion('');
+                setTimer(4270);
+                setGlory(0);
+                setMatches(1);
               }}
               className="mt-8 text-white/40 hover:text-white text-[9px] font-mono uppercase tracking-widest transition-colors"
             >
@@ -432,8 +461,8 @@ export default function App() {
             <div className="w-full">
               <button 
                 onClick={handleLaunch}
-                disabled={!guildId || !region}
-                className={`w-full bg-[#2a0815] hover:bg-[#3a0b1d] border border-[#ff0055]/70 rounded py-2.5 text-white font-black tracking-widest uppercase transition-all hover:border-[#ff0055] hover:shadow-[0_0_15px_rgba(255,0,85,0.3)] text-xs cursor-pointer ${(!guildId || !region) ? 'opacity-50 cursor-not-allowed' : ''}`}
+                disabled={guildId.length !== 10 || !region}
+                className={`w-full bg-[#2a0815] hover:bg-[#3a0b1d] border border-[#ff0055]/70 rounded py-2.5 text-white font-black tracking-widest uppercase transition-all hover:border-[#ff0055] hover:shadow-[0_0_15px_rgba(255,0,85,0.3)] text-xs cursor-pointer ${(guildId.length !== 10 || !region) ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
                 LAUNCH BOTS
               </button>
