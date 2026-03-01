@@ -297,10 +297,10 @@ export default function App() {
             animate={{ opacity: 1, scale: 1 }}
             className="w-full max-w-[450px] p-8 rounded-xl bg-[#0a050a] border border-[#ff00aa]/30 neon-box flex flex-col items-center relative z-10"
           >
-            <h2 className="text-3xl font-black text-white tracking-wider mb-2 text-center neon-text uppercase">
+            <h2 className="text-3xl font-black text-white tracking-wider mb-2 text-center uppercase">
               CONGRATULATIONS!
             </h2>
-            <p className="text-[#00e5ff] text-xl font-black text-center mb-6 neon-text uppercase">
+            <p className="text-[#00e5ff] text-xl font-black text-center mb-6 uppercase">
               {botCount} BOTS HAVE BEEN SENT TO YOUR GUILD
             </p>
             
@@ -335,7 +335,7 @@ export default function App() {
               <motion.p 
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="mt-4 text-[#ff0055] text-[10px] font-bold text-center uppercase tracking-wider"
+                className="mt-4 text-[#00ff41] text-[10px] font-bold text-center uppercase tracking-wider"
               >
                 BOTS HAVE BEEN RESENT TO YOUR GUILD! PLEASE CHECK AND APPROVE
               </motion.p>
