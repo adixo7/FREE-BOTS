@@ -6,7 +6,9 @@ export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isBotSent, setIsBotSent] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [isResent, setIsResent] = useState(false);
   const [logs, setLogs] = useState<string[]>([]);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -16,6 +18,7 @@ export default function App() {
   const [region, setRegion] = useState('');
   const [launchError, setLaunchError] = useState('');
   const [timer, setTimer] = useState(4270);
+  const [botBatchOffset, setBotBatchOffset] = useState(0);
   
   // Stats for the final page
   const [matches, setMatches] = useState(1);
@@ -159,10 +162,22 @@ export default function App() {
       
       setTimeout(() => {
         setIsProcessing(false);
-        setIsSuccess(true);
-        setStartTime(Date.now());
+        setIsBotSent(true);
+        // Increase offset for next time
+        setBotBatchOffset(prev => prev + 4);
       }, 1500);
     }, 10000);
+  };
+
+  const handleAccepted = () => {
+    setIsBotSent(false);
+    setIsSuccess(true);
+    setStartTime(Date.now());
+  };
+
+  const handleRejoin = () => {
+    setIsResent(true);
+    setTimeout(() => setIsResent(false), 5000);
   };
 
   return (
@@ -274,6 +289,57 @@ export default function App() {
               )}
               <div ref={terminalEndRef} />
             </div>
+          </motion.div>
+        ) : isBotSent ? (
+          <motion.div
+            key="bot-sent"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="w-full max-w-[450px] p-8 rounded-xl bg-[#0a050a] border border-[#ff00aa]/30 neon-box flex flex-col items-center relative z-10"
+          >
+            <h2 className="text-3xl font-black text-white tracking-wider mb-2 text-center neon-text uppercase">
+              CONGRATULATIONS!
+            </h2>
+            <p className="text-[#00e5ff] text-xl font-black text-center mb-6 neon-text uppercase">
+              {botCount} BOTS HAVE BEEN SENT TO YOUR GUILD
+            </p>
+            
+            <p className="text-white/70 text-sm font-mono mb-6 text-center">
+              ACCEPT THE REQUEST OF THE BOTS
+            </p>
+
+            <div className="w-full bg-black/50 border border-[#7000ff]/30 rounded-lg p-4 mb-8 font-mono text-sm space-y-2">
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className="text-[#00e5ff]">
+                  {i + 1}. adixoglory{botBatchOffset - 4 + i + 1}
+                </div>
+              ))}
+            </div>
+
+            <div className="w-full flex flex-col gap-4">
+              <button 
+                onClick={handleAccepted}
+                className="w-full bg-[#0a2a15] hover:bg-[#0e3a1d] border border-[#00ff41]/70 rounded py-3.5 text-white font-black tracking-widest uppercase transition-all hover:border-[#00ff41] hover:shadow-[0_0_15px_rgba(0,255,65,0.3)] text-sm cursor-pointer"
+              >
+                ACCEPTED
+              </button>
+              <button 
+                onClick={handleRejoin}
+                className="w-full bg-[#2a0815] hover:bg-[#3a0b1d] border border-[#ff0055]/70 rounded py-3.5 text-white font-black tracking-widest uppercase transition-all hover:border-[#ff0055] hover:shadow-[0_0_15px_rgba(255,0,85,0.3)] text-sm cursor-pointer"
+              >
+                REJOIN
+              </button>
+            </div>
+
+            {isResent && (
+              <motion.p 
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mt-4 text-[#ff0055] text-[10px] font-bold text-center uppercase tracking-wider"
+              >
+                BOTS HAVE BEEN RESENT TO YOUR GUILD! PLEASE CHECK AND APPROVE
+              </motion.p>
+            )}
           </motion.div>
         ) : isSuccess ? (
           <motion.div
